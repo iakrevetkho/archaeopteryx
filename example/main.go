@@ -13,6 +13,7 @@ import (
 	api_hello_world_v1 "github.com/iakrevetkho/archaeopteryx/example/pkg/api/hello_world/v1"
 	api_user_v1 "github.com/iakrevetkho/archaeopteryx/example/pkg/api/user/v1"
 	api_user_v2 "github.com/iakrevetkho/archaeopteryx/example/pkg/api/user/v2"
+	"github.com/iakrevetkho/archaeopteryx/example/security"
 	archaeopteryx_service "github.com/iakrevetkho/archaeopteryx/service"
 )
 
@@ -28,6 +29,13 @@ func main() {
 	// Add swagger docs
 	conf.Docs.DocsFS = &docs.Swagger
 	conf.Docs.DocsRootFolder = "swagger"
+
+	// Add security certificates
+	certName := "cert.pem"
+	keyName := "key.pem"
+	conf.Secutiry.CertFS = &security.CertFS
+	conf.Secutiry.CertName = &certName
+	conf.Secutiry.KeyName = &keyName
 
 	// Init services
 	services := []archaeopteryx_service.IServiceServer{

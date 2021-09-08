@@ -1,6 +1,8 @@
 package config
 
 import (
+	// External
+	"crypto/tls"
 	"embed"
 	"time"
 
@@ -34,5 +36,18 @@ type Config struct {
 		DocsFS *embed.FS
 		// Folder name in FS with swagger docs
 		DocsRootFolder string
+	}
+
+	Secutiry struct {
+		// FS with the certufucates
+		CertFS *embed.FS
+		// PEM certificate file name
+		CertName *string
+		// PEM key file name
+		KeyName *string
+		// TLS config.
+		// Don't write this
+		// This struct will be parsed by archaeopteryx
+		TlsConfig *tls.Config
 	}
 }

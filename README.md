@@ -90,6 +90,19 @@ sudo mkdir /var/log/archaeopteryx
 sudo chown $USER /var/log/archaeopteryx
 ```
 
+## Security
+
+### TLS
+
+For `TLS` connection security you need to generate certificate:
+```sh
+openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem
+```
+
+`archaeopteryx` reads certificate and key from the config.
+
+NOTE. Remember, that with TLS option enabled, use `https` instead `http` in your browser.
+
 ## Test
 
 ### Unit test

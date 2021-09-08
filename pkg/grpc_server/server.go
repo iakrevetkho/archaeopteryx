@@ -8,9 +8,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
 	// Internal
+	"github.com/iakrevetkho/archaeopteryx/config"
 	api_data "github.com/iakrevetkho/archaeopteryx/pkg/api/data"
 	"github.com/iakrevetkho/archaeopteryx/pkg/helpers"
 	"github.com/iakrevetkho/archaeopteryx/service"
@@ -18,16 +20,24 @@ import (
 
 type Server struct {
 	log        *logrus.Entry
-	Port       uint64
+	addr       string
 	grpcServer *grpc.Server
+	listener   net.Listener
 }
 
-// Function creates gRPC server on the [port]
-func New(port uint64, controllers *api_data.Controllers, services []service.IServiceServer) (*Server, error) {
+func New(c *config.Config, controllers *api_data.Controllers, services []service.IServiceServer) (*Server, error) {
 	s := new(Server)
 	s.log = helpers.CreateComponentLogger("archeaopteryx-grpc")
-	s.Port = port
-	s.grpcServer = grpc.NewServer()
+	s.addr = ":" + strconv.FormatUint(c.GrpcPort, 10)
+
+	// Check that we have FS with certificates
+	if c.Secutiry.TlsConfig != nil {
+		s.log.Info("Create gRPC server with TLS security")
+		s.grpcServer = grpc.NewServer(grpc.Creds(credentials.NewTLS(c.Secutiry.TlsConfig)))
+	} else {
+		s.log.Info("Create insecure gRPC server")
+		s.grpcServer = grpc.NewServer()
+	}
 
 	// Register service routes
 	for _, service := range services {
@@ -43,20 +53,24 @@ func New(port uint64, controllers *api_data.Controllers, services []service.ISer
 	return s, nil
 }
 
-// Function runs gRPC server on the [port]
 func (s *Server) Run() error {
-	// Create a listener on TCP port
-	listener, err := net.Listen("tcp", ":"+strconv.FormatUint(s.Port, 10))
+	var err error
+
+	s.listener, err = net.Listen("tcp", s.addr)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		if err := s.grpcServer.Serve(listener); err != nil {
+		if err := s.grpcServer.Serve(s.listener); err != nil {
 			s.log.WithError(err).Fatal("Couldn't serve gRPC server")
 		}
 	}()
-	s.log.WithField("url", ":"+strconv.FormatUint(s.Port, 10)).Info("Serving gRPC")
+	s.log.WithField("url", s.addr).Info("Serving gRPC")
 
 	return nil
+}
+
+func (s *Server) Stop() {
+	s.grpcServer.Stop()
 }

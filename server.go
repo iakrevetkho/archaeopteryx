@@ -44,6 +44,19 @@ func New(config *config.Config, externalServices []service.IServiceServer) (*Ser
 	s.log.WithField("config", helpers.MustMarshal(config)).Info("Config is inited")
 
 	s.Config = config
+
+	// Read TLS config
+	if s.Config.Secutiry.CertFS != nil &&
+		s.Config.Secutiry.CertName != nil &&
+		s.Config.Secutiry.KeyName != nil {
+		s.Config.Secutiry.TlsConfig, err = helpers.CreateTlsConfig(s.Config)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create TLS config. " + err.Error())
+		}
+	} else {
+		s.log.Warn("You haven't specified TLS certificates")
+	}
+
 	s.controllers = new(api_data.Controllers)
 	s.controllers.Config = config
 	s.controllers.HealthChecker = healthchecker.New()
@@ -54,7 +67,7 @@ func New(config *config.Config, externalServices []service.IServiceServer) (*Ser
 	// Add external services
 	s.services = append(s.services, externalServices...)
 
-	s.grpcs, err = grpc_server.New(s.Config.GrpcPort, s.controllers, s.services)
+	s.grpcs, err = grpc_server.New(s.Config, s.controllers, s.services)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create gRPC server. " + err.Error())
 	}
